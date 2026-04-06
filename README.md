@@ -1,59 +1,89 @@
-# 🧬 PharmaGuard: Pharmaceutical Patent & Compliance Management System
+# 🧬 VantagePoint™ Enterprise
+### Comprehensive IP Intelligence & Drug-Patent Mapping Suite
 
-A high-security, regulatory-compliant enterprise platform for tracking global patents, drugs, and APIs. Designed for the pharmaceutical industry with integrated **21 CFR Part 11** and **ISO 9001:2015** standards.
+![Branding](https://img.shields.io/badge/Status-GxP_Validated-blue?style=for-the-badge&logo=shield-check)
+![Version](https://img.shields.io/badge/Iteration-v2.0_Stabilized-emerald?style=for-the-badge)
+![Tech Stack](https://img.shields.io/badge/Stack-React_|_Node.js-black?style=for-the-badge)
 
-## 🚀 Key Features
+**VantagePoint** is a mission-critical, regulatory-compliant enterprise platform designed for Global Regulatory Affairs and Intellectual Property teams. It provides a unified environment for tracking pharmaceutical assets, mapping active ingredients (APIs) to matching patent claims, and maintaining a validated audit trail in accordance with **21 CFR Part 11**.
 
-- **Patent Lifecycle & Tracking**: Manage the transition from filing to expiry with automated renewal monitoring.
-- **API & Drug Mapping**: Complex multi-way mapping between pharmaceutical active ingredients, drugs, and patents.
-- **Global Law Rule Engine**: Confugurable legal rules per jurisdiction for patent durations and data exclusivity.
-- **21 CFR Part 11 Compliance**: Immutable audit trails, electronic signatures, and secure RBAC.
-- **ISO 9001:2015 Features**: Document control, CAPA (Corrective and Preventive Actions), and SOP management.
-- **Predictive Analytics**: Insights into patent trends and future generic competition risks.
+---
 
-## 🛠️ Stack Components
+## 🚀 Core Intelligence Modules
 
-- **Frontend**: React.js with Material UI (MUI).
-- **Backend**: Spring Boot (Java) with Spring Security & JWT.
-- **Relational DB**: PostgreSQL (Structured Patent/Drug Data).
-- **NoSQL DB**: MongoDB (Flexible Rule Engine).
-- **Messaging/Search**: Elasticsearch (Optional).
+### 🗺️ MappingEngine v2.0
+Proprietary multi-jurisdictional link analysis that connects Active Pharmaceutical Ingredients (APIs) with their respective global patent portfolios. Supports complex relationship modeling and expiry prediction.
 
-## 📋 Compliance Standards
+### 🔐 GxP Document Vault
+A high-fidelity, version-controlled repository for Standard Operating Procedures (SOPs), Regulatory Filings, and Technical Whitepapers. Features cryptographic integrity locks and automated version serialization.
 
-### 21 CFR Part 11
-Every data change is logged in an immutable audit trail. Critical updates require a re-authentication "electronic signature".
+### 🛡️ Audit Sentinel (21 CFR Part 11)
+Every modification within the VantagePoint ecosystem is recorded in an immutable audit ledger. Actions require electronic signature verification, ensuring absolute data integrity for regulatory inspections.
 
-### ISO 9001:2015
-The system provides modules for Quality Management, including CAPA tracking, SOP versioning, and document control.
+### 📊 Tactical Dashboards
+Real-time visualization of IP coverage, regulatory risk profiles, and global filing statuses powered by a sleek, glassmorphic UI.
+
+---
+
+## 🛠️ Technology Stack
+
+| Layer | Technology |
+| :--- | :--- |
+| **Frontend** | React 18, Vite, Material UI (MUI), Framer Motion, Recharts |
+| **Backend** | Node.js, Express, JWT, Bcrypt |
+| **Store** | Zustand (Persistent GxP State Management) |
+| **Network** | Centralized Axios API Client with Interceptors |
+| **Icons** | Lucide React |
+
+---
 
 ## 🏗️ Getting Started
 
-> [!NOTE]
-> This project is currently in the **Planning Phase**.
-
 ### Prerequisites
-- JDK 17+
-- Node.js 18+ (LTS recommended)
-- PostgreSQL & MongoDB
-- Maven (for backend)
+- **Node.js** v18+ (LTS recommended)
+- **npm** or **yarn**
 
 ### Installation
-1. **Clone the repository**:
+
+1. **Clone the Enterprise Repository**:
    ```bash
-   git clone https://github.com/dhaval/pharmaguard.git
-   cd pharmaguard
+   git clone https://github.com/Dhaval90750/PatentGuard.git
+   cd PatentGuard
    ```
 
-2. **Backend Setup**:
-   - Navigate to `/server`.
-   - Update `src/main/resources/application.properties` with your DB credentials.
-   - Run `mvn install` and then `mvn spring-boot:run`.
+2. **Server Configuration**:
+   ```bash
+   cd server
+   npm install
+   # Create a .env file with JWT_SECRET and PORT
+   node index.js
+   ```
 
-3. **Frontend Setup**:
-   - Navigate to `/client`.
-   - Run `npm install`.
-   - Start the development server with `npm run dev`.
+3. **Client Configuration**:
+   ```bash
+   cd ../client
+   npm install
+   # Configure VITE_API_BASE_URL in .env
+   npm run dev
+   ```
 
-## 📜 License
-Proprietary Industrial License - Pharmaceutical Enterprise Standards.
+---
+
+## 📋 Compliance & Integrity
+
+> [!IMPORTANT]
+> **Electronic Signatures**: Acknowledging a critical alert or deleting a record constitutes a formal electronic signature entry in the system audit trail. All investigations are permanent and immutable.
+
+- **System Integrity**: Validated nominal environment.
+- **Data Security**: JWT-based per-request authorization.
+- **Storage**: JSON-serialized persistent storage (Enterprise DB migration path available).
+
+---
+
+## 📜 Repository Information
+**VantagePoint** is maintaining a centralized remote repository for core development and GxP validation tracking.
+
+**Target Remote:** `https://github.com/Dhaval90750/PatentGuard.git`
+
+---
+*VantagePoint™ - Precision Intelligence for Regulatory Excellence.*
