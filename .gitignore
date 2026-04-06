@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Production Build
+client/dist/
+client/build/
+server/dist/
+server/build/
+
+# Environment Secrets
+.env
+.env.local
+client/.env
+client/.env.local
+server/.env
+server/.env.local
+
+# Database & Storage
+server/data/database.json
+server/data/backups/
+*.log
+npm-debug.log*
+
+# System Files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
