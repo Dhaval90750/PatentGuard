@@ -1,17 +1,21 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../config/db');
+const prisma = require('../services/prisma');
+const { authMiddleware, authorize } = require('../middlewares/authMiddleware');
 
 /**
  * @route   GET /api/documents
- * @desc    Get all documents from the GxP Vault
+ * @desc    Get all documents from the GxP Vault (V2 Prisma)
  * @access  Private
  */
-router.get('/', (req, res) => {
+router.get('/', authMiddleware, async (req, res) => {
   try {
-    const docs = db.get('documents');
+    const docs = await prisma.document.findMany({
+      orderBy: { date: 'desc' }
+    });
     res.json({ success: true, data: docs });
   } catch (err) {
+    console.error('[VAULT-FETCH-ERROR]:', err.message);
     res.status(500).json({ success: false, error: 'Vault Retrieval Failure' });
   }
 });
@@ -21,7 +25,7 @@ router.get('/', (req, res) => {
  * @desc    File a new document in the GxP Vault
  * @access  Private
  */
-router.post('/', (req, res) => {
+router.post('/', authMiddleware, authorize(['QA', 'ADMIN']), async (req, res) => {
   try {
     const { name, version, status, author, jurisdiction, folder, history } = req.body;
     
@@ -29,26 +33,28 @@ router.post('/', (req, res) => {
       return res.status(400).json({ success: false, error: 'Invalid document mapping' });
     }
 
-    const newDoc = {
-      id: `d-${Date.now()}`,
-      name,
-      version: version || 'v1.0',
-      status: status || 'DRAFT',
-      author: author || 'System User',
-      jurisdiction,
-      folder,
-      date: new Date().toISOString().split('T')[0],
-      history: history || [{ 
-        v: version || 'v1.0', 
-        date: new Date().toISOString().split('T')[0], 
-        note: 'Initial Filing' 
-      }],
-      created_at: new Date().toISOString()
-    };
+    const initialHistory = history || [{ 
+      v: version || 'v1.0', 
+      date: new Date().toISOString().split('T')[0], 
+      note: 'Initial Filing' 
+    }];
 
-    db.insert('documents', newDoc);
+    const newDoc = await prisma.document.create({
+      data: {
+        name,
+        version: version || 'v1.0',
+        status: status || 'DRAFT',
+        author: author || 'System User',
+        jurisdiction: jurisdiction || null,
+        folder,
+        date: new Date(),
+        history: initialHistory,
+      }
+    });
+
     res.status(201).json({ success: true, data: newDoc });
   } catch (err) {
+    console.error('[VAULT-POST-ERROR]:', err.message);
     res.status(500).json({ success: false, error: 'Document Commitment Failure' });
   }
 });
@@ -58,23 +64,22 @@ router.post('/', (req, res) => {
  * @desc    Update/Revise an existing document (Version Bump & Migration)
  * @access  Private
  */
-router.put('/:id', (req, res) => {
+router.put('/:id', authMiddleware, authorize(['QA', 'ADMIN']), async (req, res) => {
   try {
     const { id } = req.params;
-    const updates = req.body;
+    const { ...updates } = req.body;
     
-    const updated = db.update('documents', id, {
-      ...updates,
-      updated_at: new Date().toISOString()
+    const updated = await prisma.document.update({
+      where: { id },
+      data: {
+        ...updates
+      }
     });
-
-    if (!updated) {
-      return res.status(404).json({ success: false, error: 'Document not found in Vault' });
-    }
 
     res.json({ success: true, data: updated });
   } catch (err) {
-    res.status(500).json({ success: false, error: 'Vault Mutation Failure' });
+    console.error('[VAULT-PUT-ERROR]:', err.message);
+    res.status(404).json({ success: false, error: 'Document not found in Vault' });
   }
 });
 

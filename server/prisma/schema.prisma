@@ -1,0 +1,149 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id String @id @default(uuid())
+  username String @unique
+  password String
+  role String @default("RD")
+  updated_at DateTime @updatedAt
+  created_at DateTime @default(now())
+  @@map("users")
+}
+
+model Patent {
+  id String @id @default(uuid())
+  patentNumber String @unique
+  title String
+  jurisdiction String
+  status String
+  filingDate DateTime
+  expiryDate DateTime
+  inventors Json?
+  spc_expiry DateTime?
+  pte_extension Int? @default(0)
+  pediatric_extension Boolean @default(false)
+  data_exclusivity_expiry DateTime?
+  semantic_tags Json?
+  vector_embedding Json?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  apis Api[] @relation("PatentToApi")
+  @@map("patents")
+}
+
+model Api {
+  id String @id @default(uuid())
+  name String
+  molecularFormula String
+  manufacturer String
+  created_at String
+  updated_at String
+  patents Patent[] @relation("PatentToApi")
+  drugs Drug[] @relation("ApiToDrug")
+  @@map("apis")
+}
+
+model Drug {
+  id String @id @default(uuid())
+  name String
+  dosageForm String
+  composition String
+  manufacturer String
+  description String?
+  semantic_tags Json?
+  vector_embedding Json?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  apis Api[] @relation("ApiToDrug")
+  @@map("drugs")
+}
+
+model Notification {
+  id String @id @default(uuid())
+  severity String
+  title String
+  message String
+  timestamp DateTime @default(now())
+  read Boolean @default(false)
+  updated_at DateTime @updatedAt
+  @@map("notifications")
+}
+
+model Document {
+  id String @id @default(uuid())
+  name String
+  version String
+  status String
+  author String
+  date DateTime
+  type String
+  folder String
+  jurisdiction String?
+  history Json
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  @@map("documents")
+}
+
+model AuditLog {
+  id String @id @default(uuid())
+  timestamp DateTime @default(now())
+  userId String
+  action String
+  target String?
+  status Int
+  sig String?
+  ipAddress String?
+  @@map("audit_logs")
+}
+
+model SmtpConfig {
+  id String @id @default(uuid())
+  host String
+  port Int
+  secure Boolean @default(false)
+  user String?
+  pass String?
+  from String
+  updated_at DateTime @updatedAt
+  created_at DateTime @default(now())
+  @@map("smtp_configs")
+}
+
+model ApprovalRequest {
+  id String @id @default(uuid())
+  documentId String?
+  patentId String?
+  drugId String?
+  status String @default("PENDING")
+  workflowType String
+  description String?
+  currentStep Int @default(1)
+  totalSteps Int @default(3)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  signatures Signature[]
+  @@map("approval_requests")
+}
+
+model Signature {
+  id String @id @default(uuid())
+  requestId String
+  userId String
+  username String
+  role String
+  timestamp DateTime @default(now())
+  ipAddress String?
+  reason String?
+  isElectronicSignature Boolean @default(true)
+  sig String?
+  request ApprovalRequest @relation(fields: [requestId], references: [id])
+  @@map("signatures")
+}

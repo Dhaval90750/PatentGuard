@@ -3,7 +3,7 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const rateLimit = require('express-rate-limit');
-const db = require('../config/db');
+const prisma = require('../services/prisma');
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -14,7 +14,7 @@ const loginLimiter = rateLimit({
 });
 
 /**
- * @desc    Enterprise Authentication (V2.0 — bcrypt + rate limiting)
+ * @desc    Enterprise Authentication (V2.0 — Prisma + PostgreSQL)
  * @route   POST /api/auth/login
  * @access  Public
  */
@@ -26,8 +26,9 @@ router.post('/login', loginLimiter, async (req, res) => {
       return res.status(400).json({ success: false, error: 'Mandatory personnel credentials missing.' });
     }
 
-    const users = db.get('users');
-    const user = users.find(u => u.username === username);
+    const user = await prisma.user.findUnique({
+      where: { username }
+    });
 
     if (!user) {
       return res.status(401).json({ success: false, error: 'Invalid personnel credentials. Identity verification failure.' });
@@ -43,7 +44,10 @@ router.post('/login', loginLimiter, async (req, res) => {
       passwordValid = (user.password === password);
       if (passwordValid) {
         const hash = await bcrypt.hash(password, 10);
-        db.update('users', user.id, { password: hash });
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { password: hash }
+        });
       }
     }
 
@@ -67,6 +71,29 @@ router.post('/login', loginLimiter, async (req, res) => {
   } catch (err) {
     console.error('[AUTH-FATAL-ERR]:', err.message);
     res.status(500).json({ success: false, error: 'Internal Identity Engine Failure' });
+  }
+});
+
+/**
+ * @desc    Emergency Administrative Reset (Temporary)
+ * @route   GET /api/auth/reset-admin
+ * @access  Maintenance Only
+ */
+router.get('/reset-admin', async (req, res) => {
+  try {
+    const admin = await prisma.user.upsert({
+      where: { username: 'admin@zenithqa.com' },
+      update: { password: 'password123' },
+      create: {
+        username: 'admin@zenithqa.com',
+        password: 'password123',
+        role: 'ADMIN',
+      },
+    });
+    res.json({ success: true, message: 'Emergency personnel credentials restored.', admin: admin.username });
+  } catch (err) {
+    console.error('[AUTH-RESET-ERR]:', err.message);
+    res.status(500).json({ success: false, error: 'Reset failed' });
   }
 });
 

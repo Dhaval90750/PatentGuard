@@ -24,6 +24,12 @@ const PatentRow = ({ row, onEdit, onDelete, getStatusColor }) => {
   const today = new Date();
   const expiry = new Date(row.expiryDate);
   const filing = new Date(row.filingDate);
+  
+  // Defensive parsing for JSON fields stored as strings in SQLite
+  const inventors = Array.isArray(row.inventors) 
+    ? row.inventors 
+    : (typeof row.inventors === 'string' ? JSON.parse(row.inventors) : []);
+
   const totalLife = (expiry - filing) / (1000 * 60 * 60 * 24 * 365);
   const elapsed = (today - filing) / (1000 * 60 * 60 * 24 * 365);
   const progress = Math.min(100, Math.max(0, (elapsed / totalLife) * 100));
@@ -116,7 +122,7 @@ const PatentRow = ({ row, onEdit, onDelete, getStatusColor }) => {
                 <Grid size={{ xs: 12, md: 3 }}>
                   <Typography variant="overline" sx={{ fontWeight: 900, color: 'primary.main' }}>Inventorship</Typography>
                   <Stack spacing={1} sx={{ mt: 2 }}>
-                    {(row.inventors || []).map((inv, i) => (
+                    {inventors.map((inv, i) => (
                       <Stack key={i} direction="row" spacing={1} alignItems="center">
                         <UserIcon size={14} color="#94a3b8" />
                         <Typography variant="body2" sx={{ fontWeight: 700 }}>{inv}</Typography>
@@ -160,6 +166,12 @@ const TimelineCard = ({ patent, getStatusColor }) => {
   const today = new Date();
   const expiry = new Date(patent.expiryDate);
   const filing = new Date(patent.filingDate);
+
+  // Defensive parsing for JSON fields stored as strings in SQLite
+  const inventors = Array.isArray(patent.inventors) 
+    ? patent.inventors 
+    : (typeof patent.inventors === 'string' ? JSON.parse(patent.inventors) : []);
+
   const totalLife = (expiry - filing) / (1000 * 60 * 60 * 24 * 365);
   const elapsed = (today - filing) / (1000 * 60 * 60 * 24 * 365);
   const progress = Math.min(100, Math.max(0, (elapsed / totalLife) * 100));
@@ -218,7 +230,7 @@ const TimelineCard = ({ patent, getStatusColor }) => {
       <Stack direction="row" justifyContent="space-between" alignItems="center">
         <Stack direction="row" spacing={0.75} alignItems="center">
           <UserIcon size={12} color="#94a3b8" />
-          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, fontSize: '0.65rem' }}>{(patent.inventors || []).join(', ')}</Typography>
+          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, fontSize: '0.65rem' }}>{inventors.join(', ')}</Typography>
         </Stack>
         {isExpiringSoon && !isExpired && (
           <Chip icon={<AlertTriangle size={10} />} label="EXPIRING SOON" size="small" color="warning" sx={{ fontWeight: 900, fontSize: '0.55rem', height: 20 }} />

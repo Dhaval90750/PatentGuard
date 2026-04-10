@@ -1,30 +1,39 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../config/db');
+const prisma = require('../services/prisma');
 const { authMiddleware } = require('../middlewares/authMiddleware');
 
 /**
- * @route   GET /api/notifications
- * @desc    Fetch internal GxP notifications
+ * @desc    Fetch internal GxP notifications (V2 Prisma)
  */
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const notifications = db.get('notifications');
+    const notifications = await prisma.notification.findMany({
+      orderBy: { timestamp: 'desc' }
+    });
     res.json({ success: true, data: notifications || [] });
   } catch (err) {
-    res.status(500).json({ success: false, error: 'Notification Retrieval Failure' });
+    console.error('[NOTIF-FETCH-ERROR]:', err.message);
+    res.status(500).json({ success: false, error: 'Notification V2 Retrieval Failure' });
   }
 });
 
 /**
- * @route   PATCH /api/notifications/:id/read
  * @desc    Mark a GxP alert as investigated (read)
  */
 router.patch('/:id/read', authMiddleware, async (req, res) => {
   try {
-    const updated = db.update('notifications', req.params.id, { read: true });
-    res.json({ success: true, data: db.get('notifications') });
+    const { id } = req.params;
+    await prisma.notification.update({
+      where: { id },
+      data: { read: true }
+    });
+    const allNotifications = await prisma.notification.findMany({
+      orderBy: { timestamp: 'desc' }
+    });
+    res.json({ success: true, data: allNotifications });
   } catch (err) {
+    console.error('[NOTIF-UPDATE-ERROR]:', err.message);
     res.status(500).json({ success: false, error: 'Alert Ack Failure' });
   }
 });

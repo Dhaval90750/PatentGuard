@@ -24,7 +24,11 @@ import {
   Bell,
   FlaskConical,
   Network,
-  TriangleAlert
+  TriangleAlert,
+  Globe,
+  Zap,
+  Target,
+  Fingerprint
 } from 'lucide-react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
@@ -36,6 +40,8 @@ const menuGroups = [
     items: [
       { text: 'Executive Dashboard', icon: <LayoutDashboard size={20} />, path: '/' },
       { text: 'Patent Registry', icon: <Landmark size={20} />, path: '/patents' },
+      { text: 'Global Risk Heatmap', icon: <Globe size={20} />, path: '/mapping/heatmap' },
+      { text: 'Strategy Simulator', icon: <Zap size={20} />, path: '/strategy/simulator' },
       { text: 'Regulatory Reports', icon: <BarChart3 size={20} />, path: '/reports' },
     ]
   },
@@ -45,12 +51,14 @@ const menuGroups = [
       { text: 'Drug Registry', icon: <Dna size={20} />, path: '/drugs' },
       { text: 'API Ingredient Registry', icon: <FlaskConical size={20} />, path: '/apis' },
       { text: 'Document Vault', icon: <FolderOpen size={20} />, path: '/documents' },
+      { text: 'AI Similarity Engine', icon: <Target size={20} />, path: '/mapping/similarity' },
       { text: 'Strategic Dependency Map', icon: <Network size={20} />, path: '/mapping' },
     ]
   },
   {
     title: 'Compliance & Audit',
     items: [
+      { text: 'Compliance Approval Hub', icon: <Fingerprint size={20} />, path: '/compliance/approvals' },
       { text: 'GxP Audit Trail', icon: <ShieldCheck size={20} />, path: '/compliance' },
       { text: 'Notifications', icon: <Bell size={20} />, path: '/notifications' },
     ]
@@ -59,6 +67,7 @@ const menuGroups = [
     title: 'System Administration',
     items: [
       { text: 'Personnel RBAC', icon: <Users size={20} />, path: '/users' },
+      { text: 'SMTP Configuration', icon: <Bell size={20} />, path: '/settings/smtp' },
       { text: 'System Settings', icon: <Settings size={20} />, path: '/settings' },
     ]
   }

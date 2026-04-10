@@ -80,6 +80,16 @@ Real-time visualization of IP coverage, regulatory risk profiles, and global fil
 
 ---
 
+## 🗺️ VantagePoint V2 Roadmap (Current Phase)
+We are currently transitioning into **Phase V2: Cognitive Compliance & Enterprise Interoperability**. This next evolution focuses on high-scale predictive intelligence and real-time global mapping.
+
+Detailed V2 planning is available in the following documents:
+- 📑 **[v2_roadmap.md](file:///e:/Patent/v2_roadmap.md)**: Strategic 4-phase rollout and vision.
+- 🧪 **[v2_feature_specs.md](file:///e:/Patent/v2_feature_specs.md)**: Deep-dive into AI mapping, 3D graphs, and CAPA.
+- 🏗️ **[v2_technical_architecture.md](file:///e:/Patent/v2_technical_architecture.md)**: Technical pivot to PostgreSQL and real-time collaboration.
+
+---
+
 ## 📜 Repository Information
 **VantagePoint** is maintaining a centralized remote repository for core development and GxP validation tracking.
 

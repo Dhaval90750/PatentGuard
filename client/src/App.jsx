@@ -18,6 +18,11 @@ import ErrorBoundary from './components/ErrorBoundary';
 import Profile from './pages/users/Profile';
 import Preferences from './pages/users/Preferences';
 import Support from './pages/support/Support';
+import SmtpSettings from './pages/settings/SmtpSettings';
+import StrategySimulator from './pages/strategy/StrategySimulator';
+import SimilarityEngine from './pages/mapping/SimilarityEngine';
+import RiskHeatmap from './pages/mapping/RiskHeatmap';
+import ApprovalCenter from './pages/compliance/ApprovalCenter';
 
 const PageWrapper = ({ children }) => (
   <motion.div
@@ -58,6 +63,11 @@ const AnimatedRoutes = () => {
         {/* User Experience & Support Routes (V5.0 Fulfillment) */}
         <Route path="/profile" element={<ProtectedRoute><PageWrapper><Profile /></PageWrapper></ProtectedRoute>} />
         <Route path="/preferences" element={<ProtectedRoute><PageWrapper><Preferences /></PageWrapper></ProtectedRoute>} />
+        <Route path="/settings/smtp" element={<ProtectedRoute><PageWrapper><SmtpSettings /></PageWrapper></ProtectedRoute>} />
+        <Route path="/strategy/simulator" element={<ProtectedRoute><PageWrapper><StrategySimulator /></PageWrapper></ProtectedRoute>} />
+        <Route path="/mapping/similarity" element={<ProtectedRoute><PageWrapper><SimilarityEngine /></PageWrapper></ProtectedRoute>} />
+        <Route path="/mapping/heatmap" element={<ProtectedRoute><PageWrapper><RiskHeatmap /></PageWrapper></ProtectedRoute>} />
+        <Route path="/compliance/approvals" element={<ProtectedRoute><PageWrapper><ApprovalCenter /></PageWrapper></ProtectedRoute>} />
         <Route path="/support" element={<ProtectedRoute><PageWrapper><Support /></PageWrapper></ProtectedRoute>} />
       </Routes>
     </AnimatePresence>

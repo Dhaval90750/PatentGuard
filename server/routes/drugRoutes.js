@@ -1,63 +1,71 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../config/db');
-const { v4: uuidv4 } = require('uuid');
+const prisma = require('../services/prisma');
 const { authMiddleware, authorize } = require('../middlewares/authMiddleware');
 
 /**
- * @desc    Get all Drugs (V3.0 Stability)
+ * @desc    Get all Drugs (V2 Prisma Optimized)
  */
-router.get('/drugs', authMiddleware, (req, res) => {
+router.get('/drugs', authMiddleware, async (req, res) => {
   try {
-    const drugs = db.get('drugs').sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    const drugs = await prisma.drug.findMany({
+      orderBy: { created_at: 'desc' },
+      include: { apis: true }
+    });
     res.json({ success: true, data: drugs });
   } catch (err) {
-    res.status(500).json({ success: false, error: 'Drug Persistence Error' });
+    console.error('[DRUG-FETCH-ERROR]:', err.message);
+    res.status(500).json({ success: false, error: 'Drug V2 Retrieval Failure' });
   }
 });
 
 /**
  * @desc    Register a new product
  */
-router.post('/drugs', authMiddleware, authorize(['RD', 'ADMIN']), (req, res) => {
+router.post('/drugs', authMiddleware, authorize(['RD', 'ADMIN']), async (req, res) => {
   try {
-    const { name, dosageForm, composition } = req.body;
+    const { name, dosageForm, composition, manufacturer } = req.body;
     
     if (!name) {
       return res.status(400).json({ success: false, error: 'Product name mandatory.' });
     }
 
-    const newDrug = {
-      id: uuidv4(),
-      name,
-      dosageForm,
-      composition,
-      created_at: new Date().toISOString()
-    };
+    const newDrug = await prisma.drug.create({
+      data: {
+        name,
+        dosageForm,
+        composition,
+        manufacturer: manufacturer || 'Unknown',
+      }
+    });
 
-    db.insert('drugs', newDrug);
-    res.status(201).json({ success: true, data: newDrug, message: 'New product initialized in GxP Registry.' });
+    res.status(201).json({ success: true, data: newDrug, message: 'New product initialized in GxP V2 Registry.' });
   } catch (err) {
-    res.status(500).json({ success: false, error: 'File-System Persistence Failure' });
+    console.error('[DRUG-CREATE-ERROR]:', err.message);
+    res.status(500).json({ success: false, error: 'Drug V2 Persistence Failure' });
   }
 });
 
 /**
  * @desc    Get all APIs
  */
-router.get('/apis', authMiddleware, (req, res) => {
+router.get('/apis', authMiddleware, async (req, res) => {
   try {
-    const apis = db.get('apis').sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    const apis = await prisma.api.findMany({
+      orderBy: { created_at: 'desc' },
+      include: { patents: true }
+    });
     res.json({ success: true, data: apis });
   } catch (err) {
-    res.status(500).json({ success: false, error: 'API Persistence Error' });
+    console.error('[API-FETCH-ERROR]:', err.message);
+    res.status(500).json({ success: false, error: 'API V2 Retrieval Failure' });
   }
 });
 
 /**
  * @desc    Initialize a new API
  */
-router.post('/apis', authMiddleware, authorize(['RD', 'ADMIN']), (req, res) => {
+router.post('/apis', authMiddleware, authorize(['RD', 'ADMIN']), async (req, res) => {
   try {
     const { name, molecularFormula, manufacturer } = req.body;
     
@@ -65,74 +73,84 @@ router.post('/apis', authMiddleware, authorize(['RD', 'ADMIN']), (req, res) => {
       return res.status(400).json({ success: false, error: 'API name mandatory.' });
     }
 
-    const newApi = {
-      id: uuidv4(),
-      name,
-      molecularFormula,
-      manufacturer,
-      created_at: new Date().toISOString()
-    };
+    const newApi = await prisma.api.create({
+      data: {
+        name,
+        molecularFormula,
+        manufacturer: manufacturer || 'Unknown',
+      }
+    });
 
-    db.insert('apis', newApi);
-    res.status(201).json({ success: true, data: newApi, message: 'Persistent API Registry initialized' });
+    res.status(201).json({ success: true, data: newApi, message: 'Persistent API Registry V2 initialized' });
   } catch (err) {
-    res.status(500).json({ success: false, error: 'File-System Persistence Failure' });
+    console.error('[API-CREATE-ERROR]:', err.message);
+    res.status(500).json({ success: false, error: 'API V2 Persistence Failure' });
   }
 });
 
 /**
  * @desc    Update a drug
  */
-router.put('/drugs/:id', authMiddleware, authorize(['RD', 'ADMIN']), (req, res) => {
+router.put('/drugs/:id', authMiddleware, authorize(['RD', 'ADMIN']), async (req, res) => {
   try {
     const { id } = req.params;
-    const updated = db.update('drugs', id, { ...req.body, updated_at: new Date().toISOString() });
-    if (updated) res.json({ success: true, data: updated });
-    else res.status(404).json({ success: false, error: 'Product not found.' });
+    const updated = await prisma.drug.update({
+      where: { id },
+      data: { ...req.body }
+    });
+    res.json({ success: true, data: updated });
   } catch (err) {
-    res.status(500).json({ success: false, error: 'Update persistence failure' });
+    console.error('[DRUG-UPDATE-ERROR]:', err.message);
+    res.status(404).json({ success: false, error: 'Product not found or update error.' });
   }
 });
 
 /**
  * @desc    Delete a drug
  */
-router.delete('/drugs/:id', authMiddleware, authorize(['ADMIN']), (req, res) => {
+router.delete('/drugs/:id', authMiddleware, authorize(['ADMIN']), async (req, res) => {
   try {
     const { id } = req.params;
-    const deleted = db.remove('drugs', id);
-    if (deleted) res.json({ success: true });
-    else res.status(404).json({ success: false, error: 'Product not found.' });
+    await prisma.drug.delete({
+      where: { id }
+    });
+    res.json({ success: true, message: 'Product record withdrawn from V2 registry.' });
   } catch (err) {
-    res.status(500).json({ success: false, error: 'Withdrawal persistence failure' });
+    console.error('[DRUG-DELETE-ERROR]:', err.message);
+    res.status(404).json({ success: false, error: 'Product not found.' });
   }
 });
 
 /**
  * @desc    Update an API
  */
-router.put('/apis/:id', authMiddleware, authorize(['RD', 'ADMIN']), (req, res) => {
+router.put('/apis/:id', authMiddleware, authorize(['RD', 'ADMIN']), async (req, res) => {
   try {
     const { id } = req.params;
-    const updated = db.update('apis', id, { ...req.body, updated_at: new Date().toISOString() });
-    if (updated) res.json({ success: true, data: updated });
-    else res.status(404).json({ success: false, error: 'API not found.' });
+    const updated = await prisma.api.update({
+      where: { id },
+      data: { ...req.body }
+    });
+    res.json({ success: true, data: updated });
   } catch (err) {
-    res.status(500).json({ success: false, error: 'Update persistence failure' });
+    console.error('[API-UPDATE-ERROR]:', err.message);
+    res.status(404).json({ success: false, error: 'API not found or update error.' });
   }
 });
 
 /**
  * @desc    Delete an API
  */
-router.delete('/apis/:id', authMiddleware, authorize(['ADMIN']), (req, res) => {
+router.delete('/apis/:id', authMiddleware, authorize(['ADMIN']), async (req, res) => {
   try {
     const { id } = req.params;
-    const deleted = db.remove('apis', id);
-    if (deleted) res.json({ success: true });
-    else res.status(404).json({ success: false, error: 'API not found.' });
+    await prisma.api.delete({
+      where: { id }
+    });
+    res.json({ success: true, message: 'API record withdrawn from V2 registry.' });
   } catch (err) {
-    res.status(500).json({ success: false, error: 'Withdrawal persistence failure' });
+    console.error('[API-DELETE-ERROR]:', err.message);
+    res.status(404).json({ success: false, error: 'API not found.' });
   }
 });
 

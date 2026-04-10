@@ -1,18 +1,20 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../config/db');
-const { v4: uuidv4 } = require('uuid');
+const prisma = require('../services/prisma');
+const bcrypt = require('bcryptjs');
 const { authMiddleware, authorize } = require('../middlewares/authMiddleware');
 
 /**
- * @desc    Get all personnel users
+ * @desc    Get all personnel users (V2 Prisma)
  */
-router.get('/', authMiddleware, (req, res) => {
+router.get('/', authMiddleware, async (req, res) => {
   try {
-    const users = db.get('users');
-    const safeUsers = users.map(u => ({ id: u.id, username: u.username, role: u.role }));
-    res.json({ success: true, data: safeUsers });
+    const users = await prisma.user.findMany({
+      select: { id: true, username: true, role: true, updated_at: true }
+    });
+    res.json({ success: true, data: users });
   } catch (err) {
+    console.error('[USER-FETCH-ERROR]:', err.message);
     res.status(500).json({ success: false, error: 'Directory Services Sync Failure' });
   }
 });
@@ -20,20 +22,27 @@ router.get('/', authMiddleware, (req, res) => {
 /**
  * @desc    Provision new user identity
  */
-router.post('/', authMiddleware, authorize(['ADMIN']), (req, res) => {
+router.post('/', authMiddleware, authorize(['ADMIN']), async (req, res) => {
   try {
     const { username, password, role } = req.body;
     if (!username || !password || !role) {
       return res.status(400).json({ success: false, error: 'Username, password and role are required.' });
     }
-    const users = db.get('users');
-    if (users.find(u => u.username === username)) {
+    
+    const existingUser = await prisma.user.findUnique({ where: { username } });
+    if (existingUser) {
       return res.status(409).json({ success: false, error: 'Username already exists.' });
     }
-    const newUser = { id: uuidv4(), username, password, role, created_at: new Date().toISOString() };
-    db.insert('users', newUser);
-    res.status(201).json({ success: true, data: { id: newUser.id, username: newUser.username, role: newUser.role } });
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = await prisma.user.create({
+      data: { username, password: hashedPassword, role },
+      select: { id: true, username: true, role: true }
+    });
+
+    res.status(201).json({ success: true, data: newUser });
   } catch (err) {
+    console.error('[USER-PROVISION-ERROR]:', err.message);
     res.status(500).json({ success: false, error: 'Provisioning failed.' });
   }
 });
@@ -41,34 +50,35 @@ router.post('/', authMiddleware, authorize(['ADMIN']), (req, res) => {
 /**
  * @desc    Update user role
  */
-router.put('/:id', authMiddleware, authorize(['ADMIN']), (req, res) => {
+router.put('/:id', authMiddleware, authorize(['ADMIN']), async (req, res) => {
   try {
     const { id } = req.params;
-    const updated = db.update('users', id, { role: req.body.role, updated_at: new Date().toISOString() });
-    if (updated) {
-      res.json({ success: true, data: { id: updated.id, username: updated.username, role: updated.role } });
-    } else {
-      res.status(404).json({ success: false, error: 'User not found.' });
-    }
+    const { role } = req.body;
+
+    const updated = await prisma.user.update({
+      where: { id },
+      data: { role },
+      select: { id: true, username: true, role: true }
+    });
+    
+    res.json({ success: true, data: updated });
   } catch (err) {
-    res.status(500).json({ success: false, error: 'Role update failed.' });
+    console.error('[USER-UPDATE-ERROR]:', err.message);
+    res.status(404).json({ success: false, error: 'User not found or update failed.' });
   }
 });
 
 /**
  * @desc    Revoke user access (delete)
  */
-router.delete('/:id', authMiddleware, authorize(['ADMIN']), (req, res) => {
+router.delete('/:id', authMiddleware, authorize(['ADMIN']), async (req, res) => {
   try {
     const { id } = req.params;
-    const deleted = db.remove('users', id);
-    if (deleted) {
-      res.json({ success: true, message: 'Identity revoked. Audit recorded.' });
-    } else {
-      res.status(404).json({ success: false, error: 'User not found.' });
-    }
+    await prisma.user.delete({ where: { id } });
+    res.json({ success: true, message: 'Identity revoked. Audit recorded.' });
   } catch (err) {
-    res.status(500).json({ success: false, error: 'Revocation failed.' });
+    console.error('[USER-REVOKE-ERROR]:', err.message);
+    res.status(404).json({ success: false, error: 'User not found.' });
   }
 });
 

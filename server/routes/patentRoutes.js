@@ -1,84 +1,92 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../config/db');
-const { v4: uuidv4 } = require('uuid');
+const prisma = require('../services/prisma');
 const { authMiddleware, authorize } = require('../middlewares/authMiddleware');
 
 /**
- * @desc    Get all patents (V3.0 Stability)
+ * @desc    Get all patents (V2 Prisma Optimized)
  */
-router.get('/', authMiddleware, (req, res) => {
+router.get('/', authMiddleware, async (req, res) => {
   try {
-    const patents = db.get('patents').sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    const patents = await prisma.patent.findMany({
+      orderBy: { created_at: 'desc' },
+      include: { apis: true } // Include linked APIs for richer data
+    });
     res.json({ success: true, data: patents });
   } catch (err) {
-    res.status(500).json({ success: false, error: 'Database Persistence Error' });
+    console.error('[DATABASE-FETCH-ERROR]:', err.message);
+    res.status(500).json({ success: false, error: 'V2 Database Retrieval Failure' });
   }
 });
 
 /**
- * @desc    Create a new patent (FileSystem Sync)
+ * @desc    Create a new patent (V2 Prisma Transaction-Ready)
  */
-router.post('/', authMiddleware, authorize(['LEGAL', 'ADMIN']), (req, res) => {
+router.post('/', authMiddleware, authorize(['LEGAL', 'ADMIN']), async (req, res) => {
   try {
-    const { patentNumber, title, jurisdiction, filingDate, inventors, expiryDate } = req.body;
+    const { patentNumber, title, jurisdiction, filingDate, inventors, expiryDate, status } = req.body;
     
     if (!patentNumber || !title || !jurisdiction) {
       return res.status(400).json({ success: false, error: 'Missing mandatory patent metadata.' });
     }
 
-    const newPatent = {
-      id: uuidv4(),
-      patentNumber,
-      title,
-      jurisdiction,
-      status: req.body.status || 'DRAFT',
-      filingDate,
-      expiryDate,
-      inventors: inventors || [],
-      created_at: new Date().toISOString()
-    };
+    const newPatent = await prisma.patent.create({
+      data: {
+        patentNumber,
+        title,
+        jurisdiction,
+        status: status || 'DRAFT',
+        filingDate: filingDate ? new Date(filingDate) : new Date(),
+        expiryDate: expiryDate ? new Date(expiryDate) : new Date(),
+        inventors: inventors || [],
+      }
+    });
 
-    db.insert('patents', newPatent);
-    res.status(201).json({ success: true, data: newPatent, message: 'Patent record initialized in persistent vault.' });
+    res.status(201).json({ success: true, data: newPatent, message: 'Patent record initialized in V2 SQL Vault.' });
   } catch (err) {
-    res.status(500).json({ success: false, error: 'File-System Persistence Failure' });
+    console.error('[DATABASE-INSERT-ERROR]:', err.message);
+    res.status(500).json({ success: false, error: 'V2 SQL Persistence Failure' });
   }
 });
 
 /**
  * @desc    Update a patent
  */
-router.put('/:id', authMiddleware, authorize(['LEGAL', 'ADMIN']), (req, res) => {
+router.put('/:id', authMiddleware, authorize(['LEGAL', 'ADMIN']), async (req, res) => {
   try {
     const { id } = req.params;
-    const updated = db.update('patents', id, { ...req.body, updated_at: new Date().toISOString() });
+    const { filingDate, expiryDate, ...otherData } = req.body;
+
+    const dataToUpdate = { ...otherData };
+    if (filingDate) dataToUpdate.filingDate = new Date(filingDate);
+    if (expiryDate) dataToUpdate.expiryDate = new Date(expiryDate);
+
+    const updated = await prisma.patent.update({
+      where: { id },
+      data: dataToUpdate
+    });
     
-    if (updated) {
-      res.json({ success: true, data: updated, message: 'Patent updated with audit traceability.' });
-    } else {
-      res.status(404).json({ success: false, error: 'Patent not found.' });
-    }
+    res.json({ success: true, data: updated, message: 'Patent updated with audit traceability.' });
   } catch (err) {
-    res.status(500).json({ success: false, error: 'Update persistence failure' });
+    console.error('[DATABASE-UPDATE-ERROR]:', err.message);
+    res.status(404).json({ success: false, error: 'Patent not found or update error.' });
   }
 });
 
 /**
  * @desc    Delete a patent (GxP Withdrawal)
  */
-router.delete('/:id', authMiddleware, authorize(['ADMIN']), (req, res) => {
+router.delete('/:id', authMiddleware, authorize(['ADMIN']), async (req, res) => {
   try {
     const { id } = req.params;
-    const deleted = db.remove('patents', id);
+    await prisma.patent.delete({
+      where: { id }
+    });
     
-    if (deleted) {
-      res.json({ success: true, message: 'Patent record withdrawn from persistent registry.' });
-    } else {
-      res.status(404).json({ success: false, error: 'Patent not found.' });
-    }
+    res.json({ success: true, message: 'Patent record withdrawn from V2 SQl registry.' });
   } catch (err) {
-    res.status(500).json({ success: false, error: 'Withdrawal persistence failure' });
+    console.error('[DATABASE-DELETE-ERROR]:', err.message);
+    res.status(404).json({ success: false, error: 'Patent not found.' });
   }
 });
 
